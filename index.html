@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sakariye engine | Stealth-Universal v24.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #010204;
+            --surface: #0a0c12;
+            --accent: #38bdf8;
+            --border: #1e293b;
+            --text-main: #f1f5f9;
+            --text-dim: #475569;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container { width: 100%; max-width: 800px; text-align: center; }
+
+        h1 { 
+            font-weight: 800; font-size: 3.5rem; letter-spacing: -4px; margin: 0;
+            background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .tagline { color: var(--accent); font-size: 1rem; margin-bottom: 50px; font-weight: 500; }
+
+        .console {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            position: sticky; top: 20px; z-index: 1000;
+        }
+
+        #userInput {
+            flex: 1; background: transparent; border: none; color: white;
+            font-size: 1.15rem; padding: 12px 18px; outline: none;
+        }
+
+        #askBtn {
+            background: var(--accent); color: #000; border: none;
+            padding: 12px 30px; border-radius: 20px; font-weight: 800;
+            cursor: pointer; font-size: 0.85rem; text-transform: uppercase;
+        }
+
+        #reasoning-area { display: none; margin-top: 50px; text-align: left; }
+        
+        .thought-chain { 
+            display: flex; flex-direction: column; gap: 10px; 
+            margin-bottom: 30px; padding-left: 20px; border-left: 2px solid var(--border); 
+        }
+
+        .thought-step { 
+            display: flex; align-items: center; gap: 12px; font-size: 0.85rem; 
+            font-family: 'JetBrains Mono', monospace; color: var(--text-dim); 
+        }
+
+        .shard {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border); border-radius: 24px;
+            padding: 35px; line-height: 1.8; font-size: 1.35rem;
+            position: relative; margin-bottom: 25px;
+        }
+
+        .writing::after {
+            content: "_"; color: var(--accent);
+            animation: blink 0.8s infinite; margin-left: 5px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .owner-highlight { color: var(--accent); font-weight: 800; border-bottom: 2px solid var(--accent); }
+
+        .badge {
+            position: absolute; top: 15px; right: 25px; font-size: 0.65rem;
+            color: var(--accent); font-weight: 800; letter-spacing: 1.5px;
+            border: 1px solid var(--accent); padding: 3px 10px; border-radius: 5px;
+        }
+
+        .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: rotate 0.8s linear infinite; }
+        @keyframes rotate { to { transform: rotate(360deg); } }
+
+        footer { margin-top: 120px; font-size: 0.7rem; color: #2d3748; padding-bottom: 50px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>sakariye <span>engine</span></h1>
+            <p class="tagline">ask sakariye everything you want</p>
+        </header>
+        
+        <div class="console">
+            <input type="text" id="userInput" placeholder="ask sakariye" autocomplete="off" onkeydown="if(event.key === 'Enter') runUniversal()">
+            <button id="askBtn" onclick="runUniversal()">ASK SAKARIYE</button>
+        </div>
+
+        <div id="reasoning-area">
+            <div class="thought-chain" id="thought-log"></div>
+            <div id="output-stack"></div>
+        </div>
+
+        <footer>
+            ADMINISTRATIVE CONTROL: SAKARIYE MOHAMED ABDISAMAD &copy; 2026
+        </footer>
+    </div>
+
+    <script>
+        const input = document.getElementById('userInput');
+        const thoughtLog = document.getElementById('thought-log');
+        const stack = document.getElementById('output-stack');
+        const area = document.getElementById('reasoning-area');
+        
+        const OWNER = "Sakariye Mohamed Abdisamad";
+
+        // LOCAL KNOWLEDGE (Works even if Viewer blocks internet)
+        const LOCAL_KNOWLEDGE = {
+            "who created you": `I am the sakariye engine. My architecture and intelligence were exclusively developed and are owned by <span class="owner-highlight">${OWNER}</span>.`,
+            "yaa ku sameeyay": `Waxaa i sameeyay oo iska leh <span class="owner-highlight">${OWNER}</span>. Isaga ayaa ah mulkiilaha saxda ah ee matoorkan AI.`,
+            "owner": `The sakariye engine is a proprietary AI framework owned by <span class="owner-highlight">${OWNER}</span>.`,
+            "hello": "System active. How can I assist you today?",
+            "hi": "System active. I am the sakariye engine. Standing by."
+        };
+
+        async function runUniversal() {
+            const raw = input.value.trim();
+            if (!raw) return;
+
+            const q = raw.toLowerCase();
+            area.style.display = "block";
+            stack.innerHTML = "";
+            thoughtLog.innerHTML = "";
+
+            await addStep("Bypassing viewer security protocols...");
+            await addStep("Checking internal identity shards...");
+
+            // 1. CHECK LOCAL KNOWLEDGE FIRST (ZERO DELAY / NO INTERNET NEEDED)
+            let foundLocal = false;
+            for (let key in LOCAL_KNOWLEDGE) {
+                if (q.includes(key)) {
+                    await addStep("Administrative match found in local cache.");
+                    await typeOut(LOCAL_KNOWLEDGE[key], "LOCAL_INTEL");
+                    foundLocal = true;
+                    break;
+                }
+            }
+
+            // 2. IF NOT LOCAL, TRY STEALTH FETCH
+            if (!foundLocal) {
+                await addStep("No local match. Attempting live stealth fetch...");
+                const result = await fetchLive(q);
+                await typeOut(result, "LIVE_INTEL");
+            }
+        }
+
+        async function fetchLive(query) {
+            try {
+                const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro&explaintext&exsentences=5&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&origin=*`);
+                const data = await res.json();
+                if (data.query) {
+                    const pages = data.query.pages;
+                    return pages[Object.keys(pages)[0]].extract;
+                }
+                return "The intelligence cluster returned no data. Administrator: Sakariye Mohamed Abdisamad.";
+            } catch (e) {
+                return "CRITICAL: The viewer is blocking external data. To unlock full AI search capabilities, open this file in a real web browser (Chrome/Safari).";
+            }
+        }
+
+        async function typeOut(text, label) {
+            const div = document.createElement('div');
+            div.className = "shard";
+            div.innerHTML = `<div class="badge">${label}</div><div class="content writing"></div>`;
+            stack.appendChild(div);
+            
+            const contentEl = div.querySelector('.content');
+
+            if (text.includes('<span')) {
+                contentEl.innerHTML = text;
+                contentEl.classList.remove('writing');
+                return;
+            }
+
+            return new Promise(resolve => {
+                let i = 0;
+                const timer = setInterval(() => {
+                    if (i < text.length) {
+                        contentEl.textContent += text.charAt(i);
+                        i++;
+                        window.scrollTo(0, document.body.scrollHeight);
+                    } else {
+                        clearInterval(timer);
+                        contentEl.classList.remove('writing');
+                        resolve();
+                    }
+                }, 10);
+            });
+        }
+
+        async function addStep(text) {
+            const step = document.createElement('div');
+            step.className = 'thought-step';
+            step.innerHTML = `<div class="spinner"></div> <span>${text}</span>`;
+            thoughtLog.appendChild(step);
+            return new Promise(r => setTimeout(r, 600));
+        }
+    </script>
+</body>
+</html>
